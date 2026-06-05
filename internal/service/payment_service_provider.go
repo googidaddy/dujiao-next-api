@@ -69,7 +69,7 @@ func (s *PaymentService) applyProviderPayment(input CreatePaymentInput, order *m
 		PaymentID:      payment.ID,
 		OrderID:        order.ID,
 		OrderNo:        providerOrderNo,
-		Subject:        buildOrderSubject(order),
+		Subject:        buildPaymentSubject(order, providerType, channelType),
 		Amount:         payment.Amount,
 		Currency:       payment.Currency,
 		ClientIP:       strings.TrimSpace(input.ClientIP),
@@ -115,6 +115,24 @@ func (s *PaymentService) applyProviderPayment(input CreatePaymentInput, order *m
 		return ErrPaymentUpdateFailed
 	}
 	return nil
+}
+
+func buildPaymentSubject(order *models.Order, providerType, channelType string) string {
+	if providerType == constants.PaymentProviderOfficial && channelType == constants.PaymentChannelTypeAlipay {
+		return buildAlipayOrderSubject(order)
+	}
+	return buildOrderSubject(order)
+}
+
+func buildAlipayOrderSubject(order *models.Order) string {
+	if order == nil {
+		return ""
+	}
+	orderNo := strings.TrimSpace(order.OrderNo)
+	if orderNo == "" {
+		return "他人截图让你扫码均是诈骗"
+	}
+	return "他人截图让你扫码均是诈骗，订单号：" + orderNo
 }
 
 // ValidateChannel 校验支付渠道配置（admin 端 channel 创建/更新时调用）。
