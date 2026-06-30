@@ -144,6 +144,7 @@ type CreateProductRequest struct {
 	PurchaseType        string                   `json:"purchase_type"`
 	MinPurchaseQuantity *int                     `json:"min_purchase_quantity"`
 	MaxPurchaseQuantity *int                     `json:"max_purchase_quantity"`
+	StockDisplayMode    string                   `json:"stock_display_mode"`
 	FulfillmentType     string                   `json:"fulfillment_type"`
 	ManualStockTotal    *int                     `json:"manual_stock_total"`
 	SKUs                []ProductSKURequest      `json:"skus"`
@@ -214,6 +215,7 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 		PurchaseType:         req.PurchaseType,
 		MinPurchaseQuantity:  req.MinPurchaseQuantity,
 		MaxPurchaseQuantity:  req.MaxPurchaseQuantity,
+		StockDisplayMode:     req.StockDisplayMode,
 		FulfillmentType:      req.FulfillmentType,
 		ManualStockTotal:     req.ManualStockTotal,
 		SKUs:                 toProductSKUInputs(req.SKUs),
@@ -253,6 +255,10 @@ func (h *Handler) CreateProduct(c *gin.Context) {
 		}
 		if errors.Is(err, service.ErrProductPurchaseLimitInvalid) {
 			shared.RespondError(c, response.CodeBadRequest, "error.product_purchase_limit_invalid", nil)
+			return
+		}
+		if errors.Is(err, service.ErrProductStockDisplayInvalid) {
+			shared.RespondError(c, response.CodeBadRequest, "error.bad_request", nil)
 			return
 		}
 		if errors.Is(err, service.ErrWholesalePriceInvalid) {
@@ -301,6 +307,7 @@ func (h *Handler) UpdateProduct(c *gin.Context) {
 		PurchaseType:         req.PurchaseType,
 		MinPurchaseQuantity:  req.MinPurchaseQuantity,
 		MaxPurchaseQuantity:  req.MaxPurchaseQuantity,
+		StockDisplayMode:     req.StockDisplayMode,
 		FulfillmentType:      req.FulfillmentType,
 		ManualStockTotal:     req.ManualStockTotal,
 		SKUs:                 toProductSKUInputs(req.SKUs),
@@ -346,6 +353,10 @@ func (h *Handler) UpdateProduct(c *gin.Context) {
 			shared.RespondError(c, response.CodeBadRequest, "error.product_purchase_limit_invalid", nil)
 			return
 		}
+		if errors.Is(err, service.ErrProductStockDisplayInvalid) {
+			shared.RespondError(c, response.CodeBadRequest, "error.bad_request", nil)
+			return
+		}
 		if errors.Is(err, service.ErrWholesalePriceInvalid) {
 			shared.RespondError(c, response.CodeBadRequest, "error.wholesale_price_invalid", nil)
 			return
@@ -370,6 +381,42 @@ type QuickUpdateProductRequest struct {
 	IsActive   *bool `json:"is_active"`
 	SortOrder  *int  `json:"sort_order"`
 	CategoryID *uint `json:"category_id"`
+}
+
+type UpdateWholesalePricesRequest struct {
+	WholesalePrices *[]WholesalePriceRequest `json:"wholesale_prices" binding:"required"`
+}
+
+// UpdateProductWholesalePrices 更新商品批发价阶梯。
+func (h *Handler) UpdateProductWholesalePrices(c *gin.Context) {
+	id := c.Param("id")
+
+	var req UpdateWholesalePricesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		shared.RespondBindError(c, err)
+		return
+	}
+	inputs := toWholesalePriceInputs(req.WholesalePrices)
+	if inputs == nil {
+		shared.RespondError(c, response.CodeBadRequest, "error.bad_request", nil)
+		return
+	}
+
+	product, err := h.ProductService.UpdateWholesalePrices(id, *inputs)
+	if err != nil {
+		if errors.Is(err, service.ErrNotFound) {
+			shared.RespondError(c, response.CodeNotFound, "error.product_not_found", nil)
+			return
+		}
+		if errors.Is(err, service.ErrWholesalePriceInvalid) {
+			shared.RespondError(c, response.CodeBadRequest, "error.wholesale_price_invalid", nil)
+			return
+		}
+		shared.RespondError(c, response.CodeInternal, "error.product_update_failed", err)
+		return
+	}
+
+	response.Success(c, product)
 }
 
 // QuickUpdateProduct 快速更新商品（状态/排序/分类）

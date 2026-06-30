@@ -121,6 +121,7 @@ type CreateProductInput struct {
 	PurchaseType        string
 	MinPurchaseQuantity *int
 	MaxPurchaseQuantity *int
+	StockDisplayMode    string
 	FulfillmentType     string
 	ManualStockTotal    *int
 	SKUs                []ProductSKUInput
@@ -165,6 +166,35 @@ func (s *ProductService) ListPublic(categoryID, search string, page, pageSize in
 	return s.repo.List(filter)
 }
 
+// ListPublicForTenant 获取当前租户上下文的公开商品列表。
+func (s *ProductService) ListPublicForTenant(tenant TenantContext, resellerRepo repository.ResellerRepository, categoryID, search string, page, pageSize int) ([]models.Product, int64, error) {
+	if !isResellerOrderContext(tenant) {
+		return s.ListPublic(categoryID, search, page, pageSize)
+	}
+	if tenant.ResellerID == nil || resellerRepo == nil {
+		return nil, 0, ErrResellerProductNotListed
+	}
+	categoryIDs, err := expandPublicCategoryIDs(s.categoryRepo, categoryID)
+	if err != nil {
+		return nil, 0, err
+	}
+	hiddenIDs, err := resellerRepo.ListHiddenProductIDs(*tenant.ResellerID)
+	if err != nil {
+		return nil, 0, err
+	}
+	filter := repository.ProductListFilter{
+		Page:              page,
+		PageSize:          pageSize,
+		CategoryID:        categoryID,
+		CategoryIDs:       categoryIDs,
+		Search:            search,
+		OnlyActive:        true,
+		WithCategory:      true,
+		ExcludeProductIDs: hiddenIDs,
+	}
+	return s.repo.List(filter)
+}
+
 // ListForUpstreamSync 上游同步专用：可选包含已下架商品，便于下游识别下架状态
 // includeInactive=true 时返回所有未软删商品（含 is_active=false）
 func (s *ProductService) ListForUpstreamSync(updatedAfter *time.Time, includeInactive bool, page, pageSize int) ([]models.Product, int64, error) {
@@ -198,6 +228,30 @@ func (s *ProductService) GetPublicBySlug(slug string) (*models.Product, error) {
 	}
 	if product == nil {
 		return nil, ErrNotFound
+	}
+	return product, nil
+}
+
+// GetPublicBySlugForTenant 获取当前租户上下文的公开商品详情。
+func (s *ProductService) GetPublicBySlugForTenant(tenant TenantContext, resellerRepo repository.ResellerRepository, slug string) (*models.Product, error) {
+	product, err := s.GetPublicBySlug(slug)
+	if err != nil {
+		return nil, err
+	}
+	if !isResellerOrderContext(tenant) {
+		return product, nil
+	}
+	if tenant.ResellerID == nil || resellerRepo == nil {
+		return nil, ErrNotFound
+	}
+	hiddenIDs, err := resellerRepo.ListHiddenProductIDs(*tenant.ResellerID)
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range hiddenIDs {
+		if id == product.ID {
+			return nil, ErrNotFound
+		}
 	}
 	return product, nil
 }
@@ -285,6 +339,10 @@ func (s *ProductService) Create(input CreateProductInput) (*models.Product, erro
 	if minPurchaseQuantity > 0 && maxPurchaseQuantity > 0 && minPurchaseQuantity > maxPurchaseQuantity {
 		return nil, ErrProductPurchaseLimitInvalid
 	}
+	stockDisplayMode := normalizeStockDisplayMode(input.StockDisplayMode)
+	if stockDisplayMode == "" {
+		return nil, ErrProductStockDisplayInvalid
+	}
 
 	costPriceAmount := input.CostPriceAmount.Round(2)
 	var wholesaleInputs []WholesalePriceInput
@@ -330,6 +388,7 @@ func (s *ProductService) Create(input CreateProductInput) (*models.Product, erro
 		PurchaseType:         purchaseType,
 		MinPurchaseQuantity:  minPurchaseQuantity,
 		MaxPurchaseQuantity:  maxPurchaseQuantity,
+		StockDisplayMode:     stockDisplayMode,
 		FulfillmentType:      fulfillmentType,
 		ManualStockTotal:     manualStockTotal,
 		ManualStockLocked:    0,
@@ -446,6 +505,11 @@ func (s *ProductService) Update(id string, input CreateProductInput) (*models.Pr
 	if product.MinPurchaseQuantity > 0 && product.MaxPurchaseQuantity > 0 && product.MinPurchaseQuantity > product.MaxPurchaseQuantity {
 		return nil, ErrProductPurchaseLimitInvalid
 	}
+	stockDisplayMode := normalizeStockDisplayMode(input.StockDisplayMode)
+	if stockDisplayMode == "" {
+		return nil, ErrProductStockDisplayInvalid
+	}
+	product.StockDisplayMode = stockDisplayMode
 	rawFulfillmentType := strings.TrimSpace(input.FulfillmentType)
 	if rawFulfillmentType == "" {
 		rawFulfillmentType = product.FulfillmentType
@@ -905,6 +969,22 @@ func normalizeFulfillmentType(raw string) string {
 	}
 }
 
+func normalizeStockDisplayMode(raw string) string {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	switch value {
+	case "", constants.ProductStockDisplayExact:
+		return constants.ProductStockDisplayExact
+	case constants.ProductStockDisplayStatus:
+		return constants.ProductStockDisplayStatus
+	case constants.ProductStockDisplayRange:
+		return constants.ProductStockDisplayRange
+	case constants.ProductStockDisplayHidden:
+		return constants.ProductStockDisplayHidden
+	default:
+		return ""
+	}
+}
+
 func normalizeStockStatus(raw string) string {
 	value := strings.ToLower(strings.TrimSpace(raw))
 	switch value {
@@ -1071,6 +1151,26 @@ func (s *ProductService) QuickUpdate(id string, fields map[string]interface{}) (
 		return nil, err
 	}
 	return s.repo.GetByID(id)
+}
+
+// UpdateWholesalePrices 更新商品批发价阶梯，不修改商品其他字段。
+func (s *ProductService) UpdateWholesalePrices(id string, inputs []WholesalePriceInput) (*models.Product, error) {
+	product, err := s.repo.GetAdminByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if product == nil {
+		return nil, ErrNotFound
+	}
+
+	wholesalePrices, err := normalizeWholesalePriceInputs(inputs)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.repo.QuickUpdate(id, map[string]interface{}{"wholesale_prices": wholesalePrices}); err != nil {
+		return nil, err
+	}
+	return s.repo.GetAdminByID(id)
 }
 
 func isQuickUpdateActivatingProduct(fields map[string]interface{}) bool {

@@ -40,13 +40,14 @@ const (
 
 // 支付提供方常量
 const (
-	PaymentProviderOfficial = "official"
-	PaymentProviderEpay     = "epay"
-	PaymentProviderEpusdt   = "epusdt"
-	PaymentProviderBepusdt  = "bepusdt"
-	PaymentProviderOkpay    = "okpay"
-	PaymentProviderTokenpay = "tokenpay"
-	PaymentProviderWallet   = "wallet"
+	PaymentProviderOfficial  = "official"
+	PaymentProviderEpay      = "epay"
+	PaymentProviderEpusdt    = "epusdt"
+	PaymentProviderBepusdt   = "bepusdt"
+	PaymentProviderDujiaoPay = "dujiaopay"
+	PaymentProviderOkpay     = "okpay"
+	PaymentProviderTokenpay  = "tokenpay"
+	PaymentProviderWallet    = "wallet"
 )
 
 // 支付渠道类型常量
@@ -203,6 +204,20 @@ const (
 	ProductStockStatusOutOfStock = "out_of_stock"
 )
 
+// 公开库存展示模式与档位常量
+const (
+	ProductStockDisplayExact  = "exact"
+	ProductStockDisplayStatus = "status"
+	ProductStockDisplayRange  = "range"
+	ProductStockDisplayHidden = "hidden"
+
+	ProductStockDisplayRange1To5    = "range_1_5"
+	ProductStockDisplayRange6To20   = "range_6_20"
+	ProductStockDisplayRange21To50  = "range_21_50"
+	ProductStockDisplayRange51To100 = "range_51_100"
+	ProductStockDisplayRange100Plus = "range_100_plus"
+)
+
 // 手动库存常量
 const (
 	ManualStockUnlimited = -1
@@ -324,6 +339,7 @@ const (
 	TaskWalletRechargeExpire        = "wallet_recharge:timeout_expire"
 	TaskNotificationDispatch        = "notification:dispatch"
 	TaskAffiliateConfirmCommissions = "affiliate:confirm_commissions"
+	TaskResellerConfirmLedger       = "reseller:confirm_ledger"
 	TaskProcurementSubmit           = "procurement:submit"
 	TaskProcurementPollStatus       = "procurement:poll_status"
 	TaskProcurementSyncAccepted     = "procurement:sync_accepted"
@@ -420,6 +436,7 @@ const (
 	SettingKeyTelegramBotRuntimeStatus = "telegram_bot_runtime_status"
 	SettingKeyOrderEmailTemplateConfig = "order_email_template_config"
 	SettingFieldSiteCurrency           = "currency"
+	SettingFieldStorefrontTemplate     = "storefront_template"
 	SettingFieldPaymentExpireMinutes   = "payment_expire_minutes"
 
 	SettingKeyNavConfig = "nav_config"
@@ -438,17 +455,22 @@ const (
 	SettingKeyUpstreamSyncConfig        = "upstream_sync_config"
 	SettingFieldUpstreamSyncIntervalMin = "interval_minutes"
 	SettingFieldUpstreamPreOrderCheck   = "pre_order_stock_check_enabled"
+	SettingFieldUpstreamSyncPageSize    = "sync_page_size"
+	SettingFieldUpstreamSyncMaxPages    = "sync_max_pages"
+	SettingFieldUpstreamSyncConcurrency = "sync_conn_concurrency"
 
 	SettingKeyCallbackRoutesConfig = "callback_routes_config"
 
 	SettingKeyHomeAnnouncement   = "home_announcement"
 	SettingFieldPaymentCallback  = "payment_callback"
+	SettingFieldDujiaoPayWebhook = "dujiaopay_webhook"
 	SettingFieldPaypalWebhook    = "paypal_webhook"
 	SettingFieldStripeWebhook    = "stripe_webhook"
 	SettingFieldUpstreamCallback = "upstream_callback"
 
 	// 默认回调路由路径
 	DefaultPaymentCallbackPath  = "/api/v1/payments/callback"
+	DefaultDujiaoPayWebhookPath = "/api/v1/payments/webhook/dujiaopay"
 	DefaultPaypalWebhookPath    = "/api/v1/payments/webhook/paypal"
 	DefaultStripeWebhookPath    = "/api/v1/payments/webhook/stripe"
 	DefaultUpstreamCallbackPath = "/api/v1/upstream/callback"
@@ -457,6 +479,13 @@ const (
 // 币种常量
 const (
 	SiteCurrencyDefault = "CNY"
+)
+
+// 店面模板常量（站长全局选择的用户前台模板）
+const (
+	StorefrontTemplateClassic = "classic"
+	StorefrontTemplateVault   = "vault"
+	StorefrontTemplateDefault = StorefrontTemplateClassic
 )
 
 // 站点语言常量
