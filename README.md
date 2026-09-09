@@ -292,3 +292,7 @@ gateways and the like) outside it.
 ## Online Documentation
 
 - https://dujiao-next.com
+
+## 麦门全栈维护
+
+本 fork 的 `maimen-fullstack` 分支维护麦门全栈镜像与独立部署模板，开发、发布和演练方式见 [MAIMEN.md](MAIMEN.md)。

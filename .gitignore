@@ -22,3 +22,18 @@ internal/web/dist/
 # Agents 配置
 .agents/
 skills-lock.json
+# Private runtime and upgrade material
+.env
+.env.*
+!.env.example
+**/config/config.yml
+data/
+backups/
+*.dump
+*.dump.part
+*.rdb
+*.aof
+*.pem
+*.key
+image-digest.txt
+image-receipt.json

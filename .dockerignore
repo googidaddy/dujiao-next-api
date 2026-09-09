@@ -18,3 +18,18 @@ dist/
 frontend/*/dist/
 frontend/*/node_modules/
 internal/web/dist/
+
+# Exclude deployment state and secrets from every image layer.
+.env
+.env.*
+**/.env
+**/.env.*
+**/config/config.yml
+**/data/
+**/backups/
+**/*.dump
+**/*.dump.part
+**/*.rdb
+**/*.aof
+**/*.pem
+**/*.key

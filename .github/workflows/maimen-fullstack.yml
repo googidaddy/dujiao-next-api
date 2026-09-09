@@ -1,0 +1,128 @@
+name: maimen-fullstack
+
+on:
+  push:
+    branches: [maimen-fullstack]
+  pull_request:
+    branches: [maimen-fullstack]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maimen-fullstack-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE_NAME: ghcr.io/googidaddy/dujiao-next-fullstack
+  UPSTREAM_VERSION: v1.4.7
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go vet ./...
+      - run: go test ./...
+      - name: Verify deployment isolation
+        run: python3 ops/maimen/scripts/check_templates.py
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: |
+            frontend/admin/pnpm-lock.yaml
+            frontend/user/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: |
+          (cd frontend/admin && pnpm install --frozen-lockfile)
+          (cd frontend/user && pnpm install --frozen-lockfile)
+      - name: Run frontend tests
+        run: |
+          (cd frontend/admin && pnpm test)
+          (cd frontend/user && pnpm test)
+      - name: Build both frontends
+        run: |
+          (cd frontend/admin && pnpm build:fullstack)
+          (cd frontend/user && pnpm build)
+
+  image:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/maimen-fullstack' && github.repository == 'googidaddy/dujiao-next-api'
+    needs: [api, frontend]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the exact source commit
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:fullstack-${{ github.sha }}
+          build-args: APP_VERSION=${{ env.UPSTREAM_VERSION }}-maimen.${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/googidaddy/dujiao-next-api
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ env.UPSTREAM_VERSION }}-maimen.${{ github.sha }}
+          cache-from: type=gha,scope=maimen-fullstack
+          cache-to: type=gha,mode=max,scope=maimen-fullstack
+      - name: Verify embedded API and frontend assets without network access
+        env:
+          SMOKE_IMAGE: ${{ env.IMAGE_NAME }}:fullstack-${{ github.sha }}
+        run: python3 ops/maimen/scripts/smoke_image.py "$SMOKE_IMAGE"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish only the verified image
+        env:
+          RELEASE_IMAGE: ${{ env.IMAGE_NAME }}:fullstack-${{ github.sha }}
+        run: |
+          docker push "$RELEASE_IMAGE"
+          docker image inspect --format '{{index .RepoDigests 0}}' "$RELEASE_IMAGE" > image-digest.txt
+          python3 - <<'PYTHON'
+          import json, os, pathlib, re
+          digest = pathlib.Path('image-digest.txt').read_text(encoding='utf-8').strip()
+          if not re.fullmatch(re.escape(os.environ['IMAGE_NAME']) + r'@sha256:[0-9a-f]{64}', digest):
+              raise SystemExit('Unexpected registry digest')
+          receipt = {'source_sha': os.environ['GITHUB_SHA'], 'upstream_version': os.environ['UPSTREAM_VERSION'], 'image': digest, 'platform': 'linux/amd64', 'runtime_smoke_test': 'passed'}
+          pathlib.Path('image-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as handle:
+              handle.write('Verified image: `' + digest + '`\n')
+          PYTHON
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fullstack-image-${{ github.sha }}
+          path: |
+            image-digest.txt
+            image-receipt.json
+          retention-days: 30

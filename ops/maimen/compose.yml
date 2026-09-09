@@ -1,0 +1,85 @@
+name: maimen-v147
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:?Set the verified PostgreSQL image digest}
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a separate database password}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=en_US.utf8
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      - type: bind
+        source: ./data/postgres
+        target: /var/lib/postgresql/data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [shop]
+
+  redis:
+    image: ${REDIS_IMAGE:?Set the verified Redis image digest}
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set a separate Redis password}
+      REDISCLI_AUTH: ${REDIS_PASSWORD:?Set a separate Redis password}
+      TZ: ${TZ:-Asia/Shanghai}
+    command: [sh, -ec, 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    volumes:
+      - type: bind
+        source: ./data/redis
+        target: /data
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [shop]
+
+  app:
+    profiles: [app]
+    image: ${APP_IMAGE:?Set the verified fullstack image digest}
+    platform: linux/amd64
+    restart: unless-stopped
+    command: [./dujiao-next, -mode, all]
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${APP_PORT:-48020}:8080'
+    volumes:
+      - type: bind
+        source: ./config/config.yml
+        target: /app/config.yml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./data/uploads
+        target: /app/uploads
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./data/logs
+        target: /app/logs
+        bind:
+          create_host_path: false
+    networks: [shop]
+
+networks:
+  shop:
+    driver: bridge

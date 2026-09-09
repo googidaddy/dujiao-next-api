@@ -1,0 +1,12 @@
+{
+  "upstream_repository": "https://github.com/dujiao-next/dujiao-next",
+  "upstream_tag": "v1.4.7",
+  "upstream_commit": "47cc6207c6796ccfda0526a3708be39e1b59eba3",
+  "origin_repository": "git@github.com:googidaddy/dujiao-next-api.git",
+  "maintenance_branch": "maimen-fullstack",
+  "image_repository": "ghcr.io/googidaddy/dujiao-next-fullstack",
+  "production_platform": "linux/amd64",
+  "node_version": "24.11.1",
+  "pnpm_version": "10.34.3",
+  "go_version": "1.26.5"
+}

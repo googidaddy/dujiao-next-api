@@ -1,0 +1,22 @@
+# Always use together with compose.yml, in a separate directory and project.
+# An internal-only network blocks external calls even if copied settings still contain real credentials.
+name: maimen-v147-rehearsal
+services:
+  postgres:
+    restart: 'no'
+    mem_limit: 256m
+    cpus: 1.0
+    command: [postgres, -c, shared_buffers=32MB, -c, max_connections=30]
+  redis:
+    restart: 'no'
+    mem_limit: 128m
+    cpus: 0.5
+  app:
+    restart: 'no'
+    mem_limit: 512m
+    cpus: 1.0
+    command: [./dujiao-next, -mode, api]
+
+networks:
+  shop:
+    internal: true

@@ -1,0 +1,7 @@
+# Apply only to the shop server blocks during the final write-freeze window.
+# Existing more-specific locations must also be covered or removed during that window.
+# Payment callbacks must get an actual failure status, not a generic successful maintenance page.
+location / {
+    add_header Retry-After 300 always;
+    return 503;
+}
