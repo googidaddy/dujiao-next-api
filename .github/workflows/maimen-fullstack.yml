@@ -33,7 +33,9 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
       - name: Verify deployment isolation
-        run: python3 ops/maimen/scripts/check_templates.py
+        run: |
+          python3 ops/maimen/scripts/check_templates.py
+          python3 -B -m unittest discover -s ops/maimen/scripts -p 'test_*.py'
 
   frontend:
     runs-on: ubuntu-latest

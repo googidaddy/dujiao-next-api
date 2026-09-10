@@ -58,7 +58,8 @@ def validate(config, rehearsal):
             assert volume["type"] == "bind"
             source = Path(volume["source"])
             mounted.add(source.relative_to(DEPLOY).as_posix())
-            assert volume.get("bind", {}).get("create_host_path") is False
+            # Compose v2 omits false values from JSON; newer versions retain them.
+            assert volume.get("bind", {}).get("create_host_path", False) is False
         assert mounted == expected_mounts[name], "Unexpected mount source"
         if name != "app":
             assert not service.get("ports"), "Data services must stay private"
