@@ -1,6 +1,6 @@
 {
   "common": {
-    "siteName": "Dujiao-Next",
+    "siteName": "麦门商店",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
@@ -112,7 +112,7 @@
   },
   "home": {
     "hero": {
-      "title": "Dujiao-Next",
+      "title": "麦门商店",
       "subtitle": "Professional Products and Services Provider",
       "cta": "Browse Products",
       "badge": "Next Gen Digital Store"
@@ -259,8 +259,8 @@
   },
   "about": {
     "title": "About Us",
-    "subtitle": "Learn about Dujiao-Next",
-    "introduction": "Dujiao-Next is a professional online studio dedicated to providing high-quality products and services to our customers. Innovation, professionalism, and efficiency are our core values, and we constantly pursue excellence to create value for our customers.",
+    "subtitle": "Learn about 麦门商店",
+    "introduction": "麦门商店 provides digital products and order services. See each product page for descriptions, delivery methods, and after-sales terms.",
     "ourServices": "Our Services",
     "service1": "Premium Product Recommendations & Sales",
     "service2": "Professional Pre-sales Consulting",
