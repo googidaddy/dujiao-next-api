@@ -320,6 +320,35 @@ func TestBuildOrderSubject(t *testing.T) {
 	}
 }
 
+// 支付宝账单详情会原样展示 subject，必须在标题里带上反诈提示；
+// 其它渠道保持原样，避免 USDT 等渠道的展示位被塞进无关文案。
+func TestBuildGatewaySubjectAddsScamWarningOnlyForAlipay(t *testing.T) {
+	order := &orderdomain.Order{OrderNo: "DJ-20261106-001"}
+
+	tests := []struct {
+		name                   string
+		providerType, chanType string
+		want                   string
+	}{
+		{"alipay by provider", constants.PaymentChannelTypeAlipay, "", alipayScamWarning + "DJ-20261106-001"},
+		{"alipay by channel", "", " ALIPAY ", alipayScamWarning + "DJ-20261106-001"},
+		{"usdt untouched", "epusdt", "usdt-trc20", "DJ-20261106-001"},
+		{"empty provider", "", "", "DJ-20261106-001"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := buildGatewaySubject(order, tt.providerType, tt.chanType); got != tt.want {
+				t.Fatalf("buildGatewaySubject() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+
+	if got := buildGatewaySubject(nil, constants.PaymentChannelTypeAlipay, ""); got != "" {
+		t.Fatalf("nil order should stay empty, got %q", got)
+	}
+}
+
 type emptyProviderRefProvider struct {
 	onCreate           func(paymentcontract.GatewayCreateInput)
 	displayChannelType string

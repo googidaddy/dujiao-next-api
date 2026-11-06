@@ -263,3 +263,26 @@ func buildOrderSubject(order *orderdomain.Order) string {
 	}
 	return strings.TrimSpace(order.OrderNo)
 }
+
+// alipayScamWarning 是支付宝账单详情里展示给付款人的反诈提示。
+// 常见骗术是骗子把自己的收款码截图发给受害者让其扫码，付款人看不到商户名，
+// 只能看到 subject，所以在 subject 里直接写明这是诈骗，并把订单号带上便于对账。
+const alipayScamWarning = "截图让你扫码是诈骗，订单号"
+
+// buildGatewaySubject 生成支付渠道展示的订单标题。
+// 只有支付宝做反诈前置：其它渠道（USDT 等）的展示位不同，保持原样。
+func buildGatewaySubject(order *orderdomain.Order, providerType, channelType string) string {
+	subject := buildOrderSubject(order)
+	if subject == "" {
+		return subject
+	}
+	if isAlipayChannel(providerType, channelType) {
+		return alipayScamWarning + subject
+	}
+	return subject
+}
+
+func isAlipayChannel(providerType, channelType string) bool {
+	return strings.EqualFold(strings.TrimSpace(providerType), constants.PaymentChannelTypeAlipay) ||
+		strings.EqualFold(strings.TrimSpace(channelType), constants.PaymentChannelTypeAlipay)
+}

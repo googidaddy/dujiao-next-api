@@ -1028,6 +1028,8 @@
       "emailDomainSelectHint": "请选择邮箱后缀，系统会自动组成完整邮箱",
       "passwordLabel": "密码",
       "passwordPlaceholder": "设置登录密码",
+      "passwordHint": "至少 8 位，需包含大写字母、小写字母和数字",
+      "codeSpamHint": "未收到验证码？请查看垃圾邮件（Spam）",
       "codeLabel": "验证码",
       "codePlaceholder": "输入邮箱验证码",
       "sendCode": "发送验证码",

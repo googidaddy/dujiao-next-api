@@ -1076,6 +1076,8 @@
       "emailDomainSelectHint": "Choose an email domain; the full email address is composed automatically",
       "passwordLabel": "Password",
       "passwordPlaceholder": "Set login password",
+      "passwordHint": "At least 8 characters, including uppercase, lowercase and numbers",
+      "codeSpamHint": "Didn't get the code? Check your spam folder",
       "codeLabel": "Verification code",
       "codePlaceholder": "Enter email code",
       "sendCode": "Send code",

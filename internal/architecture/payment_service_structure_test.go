@@ -35,7 +35,7 @@ func TestPaymentServiceImplementationIsSplitByResponsibility(t *testing.T) {
 			"shouldMarkFulfilling", "shouldUseCNYPaymentCurrency", "validatePaymentAmountForChannel",
 			"validatePaymentCurrencyForChannel", "resolveExpireMinutes", "normalizePaymentStatus",
 			"isPaymentStatusValid", "shouldAutoFulfill", "isOrderFullyAutoFulfill",
-			"buildOrderSubject",
+			"buildOrderSubject", "buildGatewaySubject", "isAlipayChannel",
 		},
 		"payment_service_channel_rules.go": {
 			"computeProductChannelIntersection",

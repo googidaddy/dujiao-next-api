@@ -167,7 +167,7 @@ func (s *PaymentService) applyProviderPayment(input CreatePaymentInput, order *o
 		PaymentID:      payment.ID,
 		OrderID:        order.ID,
 		OrderNo:        providerOrderNo,
-		Subject:        buildOrderSubject(order),
+		Subject:        buildGatewaySubject(order, channel.ProviderType, channel.ChannelType),
 		Amount:         payment.Amount,
 		Currency:       payment.Currency,
 		Email:          strings.TrimSpace(customerEmail),

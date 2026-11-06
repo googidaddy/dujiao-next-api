@@ -102,6 +102,7 @@
                 </button>
               </div>
               <p v-if="formValidation.hasError('password')" class="mt-1.5 text-xs text-destructive">{{ formValidation.getError('password') }}</p>
+              <p v-else class="mt-1.5 text-xs text-muted-foreground">{{ t('auth.register.passwordHint') }}</p>
               <div v-if="password && !formValidation.hasError('password')" class="mt-2 flex items-center gap-2">
                 <div class="flex flex-1 gap-1.5">
                   <div class="h-1 flex-1 rounded-full transition-colors" :class="passwordStrength === 'weak' ? 'bg-destructive' : passwordStrength === 'medium' ? 'bg-warm' : 'bg-success'" />
@@ -151,6 +152,7 @@
                   {{ countdown > 0 ? t('auth.common.countdown', { seconds: countdown }) : t('auth.common.sendCode') }}
                 </Button>
               </div>
+              <p class="mt-2 text-xs text-muted-foreground">{{ t('auth.register.codeSpamHint') }}</p>
             </div>
 
             <!-- 协议 -->

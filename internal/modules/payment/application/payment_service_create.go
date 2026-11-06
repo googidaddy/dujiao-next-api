@@ -317,7 +317,7 @@ func (s *PaymentService) CreatePayment(input CreatePaymentInput) (*CreatePayment
 				if preparer, ok := provider.(paymentcontract.GatewayIntentPreparer); ok {
 					payment.GatewayOrderNo = resolveGatewayOrderNo(channel, payment)
 					createInput := paymentcontract.GatewayCreateInput{AutomationRevision: revision, PaymentID: payment.ID, OrderID: lockedOrder.ID, OrderNo: payment.GatewayOrderNo,
-						Subject: buildOrderSubject(&lockedOrder), Amount: payment.Amount, Currency: payment.Currency, ExpiresAt: lockedOrder.ExpiresAt,
+						Subject: buildGatewaySubject(&lockedOrder, channel.ProviderType, channel.ChannelType), Amount: payment.Amount, Currency: payment.Currency, ExpiresAt: lockedOrder.ExpiresAt,
 						ReturnURL: resolveTenantReturnURL(input.Context, input.RequestScheme, channel), ReturnURLQuery: buildPaymentReturnQuery(input, &lockedOrder, channel.ProviderType+"_return", "")}
 					if err := s.prepareGatewayPaymentIntentTx(tx, preparer, channel, payment, &createInput); err != nil {
 						return err

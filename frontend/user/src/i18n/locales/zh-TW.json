@@ -1076,6 +1076,8 @@
       "emailDomainSelectHint": "請選擇信箱後綴，系統會自動組成完整信箱",
       "passwordLabel": "密碼",
       "passwordPlaceholder": "設定登入密碼",
+      "passwordHint": "至少 8 位，需包含大寫字母、小寫字母和數字",
+      "codeSpamHint": "未收到驗證碼？請查看垃圾郵件（Spam）",
       "codeLabel": "驗證碼",
       "codePlaceholder": "輸入信箱驗證碼",
       "sendCode": "發送驗證碼",
