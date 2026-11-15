@@ -214,17 +214,19 @@ func (s *Service) ParseUserJWT(tokenString string) (*UserJWTClaims, error) {
 }
 
 // SendVerifyCode 发送邮箱验证码；inviteCode 仅在注册用途且开启邀请注册时校验（不核销）。
+// 这是公开接口的入口，只放行注册与重置密码：telegram_bind / change_email_*
+// 属于账号内操作，必须走已登录或渠道鉴权接口，否则任何人都能拿任意邮箱触发发信。
 func (s *Service) SendVerifyCode(ctx context.Context, email, purpose, locale, inviteCode string) error {
+	purpose = strings.ToLower(strings.TrimSpace(purpose))
+	if !isPublicVerifyPurpose(purpose) {
+		return ErrInvalidVerifyPurpose
+	}
 	if s.emailService == nil {
 		return ErrEmailServiceNotConfigured
 	}
 	normalized, err := normalizeEmail(email)
 	if err != nil {
 		return err
-	}
-	purpose = strings.ToLower(strings.TrimSpace(purpose))
-	if !isVerifyPurposeSupported(purpose) {
-		return ErrInvalidVerifyPurpose
 	}
 
 	if purpose == constants.VerifyPurposeRegister {
@@ -253,20 +255,6 @@ func (s *Service) SendVerifyCode(ctx context.Context, email, purpose, locale, in
 	var codeUserID *uint
 
 	if purpose == constants.VerifyPurposeReset {
-		user, err := s.userRepo.GetByEmail(normalized)
-		if err != nil {
-			return err
-		}
-		if user == nil {
-			return ErrNotFound
-		}
-		if strings.TrimSpace(user.Locale) != "" {
-			locale = user.Locale
-		}
-		codeUserID = &user.ID
-	}
-
-	if purpose == constants.VerifyPurposeTelegramBind {
 		user, err := s.userRepo.GetByEmail(normalized)
 		if err != nil {
 			return err
@@ -639,9 +627,11 @@ func NormalizeEmail(email string) (string, error) {
 	return normalizeEmail(email)
 }
 
-func isVerifyPurposeSupported(purpose string) bool {
-	switch strings.ToLower(strings.TrimSpace(purpose)) {
-	case constants.VerifyPurposeRegister, constants.VerifyPurposeReset, constants.VerifyPurposeTelegramBind, constants.VerifyPurposeChangeEmailOld, constants.VerifyPurposeChangeEmailNew:
+// isPublicVerifyPurpose 限定公开发码接口可用的用途：只保留注册与重置密码。
+// 其余用途（telegram_bind / change_email_*）属于账号内操作，不在公开入口开放。
+func isPublicVerifyPurpose(purpose string) bool {
+	switch purpose {
+	case constants.VerifyPurposeRegister, constants.VerifyPurposeReset:
 		return true
 	default:
 		return false
