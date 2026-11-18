@@ -16,7 +16,7 @@ concurrency:
 
 env:
   IMAGE_NAME: ghcr.io/googidaddy/dujiao-next-fullstack
-  UPSTREAM_VERSION: v1.5.2
+  UPSTREAM_VERSION: v1.5.4
 
 jobs:
   api:
