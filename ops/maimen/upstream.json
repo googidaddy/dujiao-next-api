@@ -1,7 +1,7 @@
 {
   "upstream_repository": "https://github.com/dujiao-next/dujiao-next",
-  "upstream_tag": "v1.5.2",
-  "upstream_commit": "5c2f06ad56b82d6a6d68886704bca0b7d04ceb06",
+  "upstream_tag": "v1.5.4",
+  "upstream_commit": "0183d88c6cf9385448f063b3df9337dc42ac5a1a",
   "origin_repository": "git@github.com:googidaddy/dujiao-next-api.git",
   "maintenance_branch": "maimen-fullstack",
   "image_repository": "ghcr.io/googidaddy/dujiao-next-fullstack",
