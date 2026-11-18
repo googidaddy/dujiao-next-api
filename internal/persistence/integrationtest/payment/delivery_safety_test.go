@@ -181,7 +181,7 @@ func TestMemberLevelAndEffectACKCommitTogetherAndRespectFreezeRevision(t *testin
 	level := md.MemberLevel{NameJSON: jsonmap.JSON{"en": "synthetic"}, Slug: "synthetic", SortOrder: 1, IsActive: true, SpendThreshold: money.FromDecimal(decimal.NewFromInt(10))}
 	must(t, db.Create(&level).Error)
 	levels := &hookedLevels{LevelRepository: ms.NewLevelStore(db)}
-	application.SetMemberLevelService(ma.NewService(levels, ms.NewPriceStore(db), ms.NewUserStore(db)))
+	application.SetMemberLevelService(ma.NewService(levels, ms.NewPriceStore(db), ms.NewUserStore(db), nil))
 	lease := func() pd.PaymentEffect {
 		must(t, db.Model(&pd.PaymentEffect{}).Where("kind = ?", "member_level").Update("after", time.Now().Add(-time.Minute)).Error)
 		rows, err := repo.LeasePaymentEffects(ctx, time.Now())
@@ -238,7 +238,7 @@ func TestObsoleteMemberEffectSkipsUpgradeAfterRefundStatus(t *testing.T) {
 	must(t, db.Model(&pd.PaymentEffect{}).Where("kind <> ?", "member_level").Update("state", "done").Error)
 	level := md.MemberLevel{NameJSON: jsonmap.JSON{"en": "synthetic"}, Slug: "synthetic", SortOrder: 1, IsActive: true, SpendThreshold: money.FromDecimal(decimal.NewFromInt(10))}
 	must(t, db.Create(&level).Error)
-	application.SetMemberLevelService(ma.NewService(ms.NewLevelStore(db), ms.NewPriceStore(db), ms.NewUserStore(db)))
+	application.SetMemberLevelService(ma.NewService(ms.NewLevelStore(db), ms.NewPriceStore(db), ms.NewUserStore(db), nil))
 	must(t, db.Model(&o).Update("status", constants.OrderStatusRefunded).Error)
 	rows, err := repo.LeasePaymentEffects(ctx, time.Now())
 	must(t, err)

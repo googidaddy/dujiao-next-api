@@ -120,6 +120,14 @@ func (s *Service) CreateManual(input CreateManualInput) (*fulfillmentdomain.Fulf
 	var created *fulfillmentdomain.Fulfillment
 	durablePayment := false
 	err = s.orderStore.WithinTransaction(func(tx ordercontract.Transaction) error {
+		// 事务内锁住订单并复核状态：事务外的检查之后退款可能已经提交。
+		locked, err := tx.Orders().GetByIDForUpdate(input.OrderID)
+		if err != nil {
+			return err
+		}
+		if locked == nil || (locked.Status != constants.OrderStatusPaid && locked.Status != constants.OrderStatusFulfilling) {
+			return ErrOrderStatusInvalid
+		}
 		guard, ok := tx.Fulfillments().(fulfillmentcontract.PaymentDeliveryGuard)
 		if !ok {
 			return ErrFulfillmentCreateFailed
@@ -166,6 +174,9 @@ func (s *Service) CreateManual(input CreateManualInput) (*fulfillmentdomain.Fulf
 	if err != nil {
 		if errors.Is(err, ErrFulfillmentExists) {
 			return nil, ErrFulfillmentExists
+		}
+		if errors.Is(err, ErrOrderStatusInvalid) {
+			return nil, ErrOrderStatusInvalid
 		}
 		if errors.Is(err, ErrOrderUpdateFailed) {
 			return nil, ErrOrderUpdateFailed
@@ -395,6 +406,8 @@ func (s *Service) createAuto(orderID uint, notify bool) (*fulfillmentdomain.Fulf
 			return nil, ErrOrderStatusInvalid
 		case errors.Is(err, ErrFulfillmentExists):
 			return nil, ErrFulfillmentExists
+		case errors.Is(err, ErrOrderStatusInvalid):
+			return nil, ErrOrderStatusInvalid
 		case errors.Is(err, ErrCardSecretInsufficient):
 			return nil, ErrCardSecretInsufficient
 		case errors.Is(err, ErrOrderUpdateFailed):
